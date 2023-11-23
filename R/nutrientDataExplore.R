@@ -36,27 +36,44 @@ df0 <- as_tibble(readxl::read_xlsx(destination_file,
                                    sheet = "All_Nutrients"))
 
 ## initial plot ###
-png(file = "figs/pairs.png",
-    width=12*ppi, height=12*ppi, res=ppi)
-df0 %>% 
-  select(-c(Region:SAMP_Notes,"TIME OF SAMPLING":"WATER DEPTH IN METRES (IN-SITU)",
-            "NGR EASTING","NGR NORTHING",
-            "N:P ratio",
-            "N_P ratio",
-            "N:Si",
-            "Phytoplankton",
-            "TIME OF HIGH TIDE")) %>% names(.)
-ggpairs(.)
-dev.off()
+# png(file = "figs/pairs.png",
+#     width=12*ppi, height=12*ppi, res=ppi)
+# df0 %>% 
+#   select(-c(Region:SAMP_Notes,"TIME OF SAMPLING":"WATER DEPTH IN METRES (IN-SITU)",
+#             "NGR EASTING","NGR NORTHING",
+#             "N:P ratio",
+#             "N_P ratio",
+#             "N:Si",
+#             "Phytoplankton",
+#             "TIME OF HIGH TIDE")) %>% names(.)
+# ggpairs(.)
+# dev.off()
 
 ## plot N_S ratio
 df0$Year <- as.numeric(df0$Year)
 
 df0 %>% 
   filter(!is.na(N_S)) %>% 
-  filter(N_S<100) %>% 
+  filter(N_S<100) %>% #likely spurious values
+  filter(N_S > 0) %>% #values missing either Total N or Si concs
+  filter(Year>2007) %>% 
   ggplot(., aes(x=SAMP_SAMPLE_DATE, y=N_S, group=WBCode))+
-  geom_line(aes(col=WB_Type),alpha=0.2)+geom_point(aes(col=WB_Type))
+  geom_line(aes(col=WB_Type),alpha=0.2)+geom_point(aes(col=WB_Type))+
+  geom_smooth(method="loess",aes(group=WBCode, col=WB_Type),
+              span=0.5,
+              se = FALSE)+
+  labs(title = "N:Si ratios",
+       subtitle = "Higher values indicate higher Si concentrations relative to total N",
+       x = "Date",y="N:Si ratio")
 
 #consider removing <2008
 #annual Si median ~ Total N
+
+df0 %>% 
+  filter(!is.na(N_S)) %>% 
+  filter(N_S<100) %>% #likely spurious values
+  filter(N_S > 0) %>% #values missing either Total N or Si concs
+  filter(Year>2007) %>% 
+  ggplot(.,aes(x=as.factor(Year),
+               y=`SILICON - as Si umol/l`, group=WB_Type))+
+  geom_boxplot()
